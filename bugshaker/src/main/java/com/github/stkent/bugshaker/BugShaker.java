@@ -22,22 +22,30 @@ import android.app.Application;
 import android.hardware.SensorManager;
 import android.support.annotation.NonNull;
 
+import com.github.stkent.bugshaker.flow.FeedbackProvider;
 import com.github.stkent.bugshaker.flow.dialog.AlertDialogType;
 import com.github.stkent.bugshaker.flow.dialog.AppCompatDialogProvider;
 import com.github.stkent.bugshaker.flow.dialog.DialogProvider;
 import com.github.stkent.bugshaker.flow.dialog.NativeDialogProvider;
+import com.github.stkent.bugshaker.flow.email.App;
+import com.github.stkent.bugshaker.flow.email.Device;
 import com.github.stkent.bugshaker.flow.email.EmailCapabilitiesProvider;
-import com.github.stkent.bugshaker.flow.email.FeedbackEmailFlowManager;
+import com.github.stkent.bugshaker.flow.email.Environment;
+import com.github.stkent.bugshaker.flow.email.FeedbackFlowManager;
 import com.github.stkent.bugshaker.flow.email.FeedbackEmailIntentProvider;
 import com.github.stkent.bugshaker.flow.email.GenericEmailIntentProvider;
 import com.github.stkent.bugshaker.flow.email.screenshot.BasicScreenShotProvider;
 import com.github.stkent.bugshaker.flow.email.screenshot.ScreenshotProvider;
 import com.github.stkent.bugshaker.flow.email.screenshot.maps.MapScreenshotProvider;
+import com.github.stkent.bugshaker.github.FeedbackGitHubIssueProvider;
+import com.github.stkent.bugshaker.github.GitHubConfiguration;
 import com.github.stkent.bugshaker.utilities.Logger;
 import com.github.stkent.bugshaker.utilities.Toaster;
 import com.squareup.seismic.ShakeDetector;
 
 import static android.content.Context.SENSOR_SERVICE;
+
+import static com.github.stkent.bugshaker.utilities.ObjectUtils.isNonNull;
 
 /**
  * The main interaction point for library users. Encapsulates all shake detection. Setters allow users to customize some
@@ -53,31 +61,35 @@ public final class BugShaker implements ShakeDetector.Listener {
 
     private final Application application;
     private EmailCapabilitiesProvider emailCapabilitiesProvider;
-    private FeedbackEmailFlowManager feedbackEmailFlowManager;
+    private FeedbackFlowManager mFeedbackFlowManager;
     private Logger logger;
 
     // Instance configuration:
     private String[] emailAddresses;
     private String emailSubjectLine;
     private AlertDialogType alertDialogType = AlertDialogType.NATIVE;
-    private boolean ignoreFlagSecure        = false;
-    private boolean loggingEnabled          = false;
+    private boolean ignoreFlagSecure = false;
+    private boolean loggingEnabled = false;
 
     // Instance configuration state:
-    private boolean assembled      = false;
+    private boolean assembled = false;
     private boolean startAttempted = false;
 
-    private final SimpleActivityLifecycleCallback simpleActivityLifecycleCallback = new SimpleActivityLifecycleCallback() {
-        @Override
-        public void onActivityResumed(final Activity activity) {
-            feedbackEmailFlowManager.onActivityResumed(activity);
-        }
+    // GitHub configuration:
+    private GitHubConfiguration gitHubConfiguration;
 
-        @Override
-        public void onActivityStopped(final Activity activity) {
-            feedbackEmailFlowManager.onActivityStopped();
-        }
-    };
+    private final SimpleActivityLifecycleCallback simpleActivityLifecycleCallback =
+            new SimpleActivityLifecycleCallback() {
+                @Override
+                public void onActivityResumed(final Activity activity) {
+                    mFeedbackFlowManager.onActivityResumed(activity);
+                }
+
+                @Override
+                public void onActivityStopped(final Activity activity) {
+                    mFeedbackFlowManager.onActivityStopped();
+                }
+            };
 
     /**
      * @param application the embedding application
@@ -187,7 +199,25 @@ public final class BugShaker implements ShakeDetector.Listener {
     }
 
     /**
-     * (Required) Assembles dependencies based on provided configuration information. This method CANNOT be called more
+     * Defines an object that contains all the information related to GitHub API
+     * by default. This method CANNOT be called after calling <code>assemble</code> or
+     * <code>start</code>.
+     *
+     * @param gitHubConfiguration contains all the information need to create an GitHub issue.
+     * @return the current <code>BugShaker</code> instance (to allow for method chaining)
+     */
+    @NonNull
+    public BugShaker setGitHubInfo(@NonNull final GitHubConfiguration gitHubConfiguration) {
+        if (assembled || startAttempted) {
+            throw new IllegalStateException(RECONFIGURATION_EXCEPTION_MESSAGE);
+        }
+        this.gitHubConfiguration = gitHubConfiguration;
+        return this;
+    }
+
+    /**
+     * (Required) Assembles dependencies based on provided configuration information. This method
+     * CANNOT be called more
      * than once. This method CANNOT be called after calling <code>start</code>.
      *
      * @return the current <code>BugShaker</code> instance (to allow for method chaining)
@@ -205,19 +235,10 @@ public final class BugShaker implements ShakeDetector.Listener {
 
         logger = new Logger(loggingEnabled);
 
-        final GenericEmailIntentProvider genericEmailIntentProvider = new GenericEmailIntentProvider();
-
-        emailCapabilitiesProvider = new EmailCapabilitiesProvider(
-                application.getPackageManager(),
-                genericEmailIntentProvider,
-                logger);
-
-        feedbackEmailFlowManager = new FeedbackEmailFlowManager(
-                application,
-                emailCapabilitiesProvider,
+        mFeedbackFlowManager = new FeedbackFlowManager(
                 new Toaster(application),
                 new ActivityReferenceManager(),
-                new FeedbackEmailIntentProvider(application, genericEmailIntentProvider),
+                getFeedbackProvider(),
                 getScreenshotProvider(),
                 getAlertDialogProvider(),
                 logger);
@@ -241,7 +262,7 @@ public final class BugShaker implements ShakeDetector.Listener {
             return;
         }
 
-        if (emailCapabilitiesProvider.canSendEmails()) {
+        if (isNonNull(gitHubConfiguration) || emailCapabilitiesProvider.canSendEmails()) {
             application.registerActivityLifecycleCallbacks(simpleActivityLifecycleCallback);
 
             final SensorManager sensorManager
@@ -266,10 +287,7 @@ public final class BugShaker implements ShakeDetector.Listener {
     public void hearShake() {
         logger.d("Shake detected!");
 
-        feedbackEmailFlowManager.startFlowIfNeeded(
-                emailAddresses,
-                emailSubjectLine,
-                ignoreFlagSecure);
+        mFeedbackFlowManager.startFlowIfNeeded(ignoreFlagSecure);
     }
 
     /**
@@ -319,4 +337,40 @@ public final class BugShaker implements ShakeDetector.Listener {
         }
     }
 
+    @NonNull
+    private FeedbackProvider getFeedbackProvider() {
+
+        FeedbackProvider feedbackProvider;
+
+        if (isNonNull(gitHubConfiguration)) {
+            feedbackProvider = new FeedbackGitHubIssueProvider(gitHubConfiguration);
+        } else {
+            feedbackProvider = getFeedbackEmailIntentProvider();
+        }
+
+        return feedbackProvider;
+    }
+
+    @NonNull
+    private FeedbackProvider getFeedbackEmailIntentProvider() {
+        FeedbackProvider feedbackProvider;
+        final GenericEmailIntentProvider genericEmailIntentProvider =
+                new GenericEmailIntentProvider();
+        emailCapabilitiesProvider = new EmailCapabilitiesProvider(
+                application.getPackageManager(),
+                genericEmailIntentProvider,
+                logger);
+
+        Environment environment = new Environment();
+        Device device = new Device(application);
+        ApplicationInfoProvider appInfoProvider = new ApplicationInfoProvider(
+                new App(application),
+                environment, device);
+
+        feedbackProvider = new FeedbackEmailIntentProvider(application,
+                genericEmailIntentProvider,
+                appInfoProvider, emailAddresses, emailSubjectLine,
+                emailCapabilitiesProvider, application, logger);
+        return feedbackProvider;
+    }
 }

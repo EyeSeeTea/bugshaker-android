@@ -120,6 +120,7 @@ dependencies {
     implementation('com.google.android.gms:play-services-maps:11.4.2') { ext.optional = true }
     implementation("com.android.support:appcompat-v7:${supportLibraryVersion}") { ext.optional = true }
 
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.mockito:mockito-core:2.13.0'
 }
