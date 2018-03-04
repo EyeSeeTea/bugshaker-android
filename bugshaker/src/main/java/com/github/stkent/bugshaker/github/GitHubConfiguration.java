@@ -27,24 +27,34 @@ public final class GitHubConfiguration implements Parcelable {
     private static final String PROPERTY_REQUIRED =
             "Property required: ";
 
-    private @NonNull
-    final String ownerName;
-    private @NonNull
-    final String repositoryName;
-    private @NonNull
-    final String authenticationToken;
-
-    public GitHubConfiguration(@NonNull String ownerName, @NonNull String repositoryName,
-            @NonNull String authenticationToken) {
-        this.ownerName = requireNonNull(ownerName, PROPERTY_REQUIRED + "ownerName");
-        this.repositoryName = requireNonNull(repositoryName, PROPERTY_REQUIRED + "repositoryName");
-        this.authenticationToken = requireNonNull(authenticationToken,
-                PROPERTY_REQUIRED + "authenticationToken");
-    }
+    @NonNull
+    private final String repositoryName;
 
     @NonNull
-    public String getOwnerName() {
-        return ownerName;
+    private final String authenticationToken;
+
+    @NonNull
+    private final String screenShotRepositoryName;
+
+    @NonNull
+    private final String screenShotBranchName;
+
+
+    public GitHubConfiguration(@NonNull String repositoryName,
+            @NonNull String authenticationToken,
+            @NonNull String screenShotRepositoryName,
+            @NonNull String screenShotBranchName) {
+
+        this.repositoryName = requireNonNull(repositoryName, PROPERTY_REQUIRED + "repositoryName");
+
+        this.authenticationToken = requireNonNull(authenticationToken,
+                PROPERTY_REQUIRED + "authenticationToken");
+
+        this.screenShotRepositoryName = requireNonNull(screenShotRepositoryName,
+                PROPERTY_REQUIRED + "screenShotRepositoryName");
+
+        this.screenShotBranchName = requireNonNull(screenShotBranchName,
+                PROPERTY_REQUIRED + "screenShotBranchName");
     }
 
     @NonNull
@@ -57,6 +67,16 @@ public final class GitHubConfiguration implements Parcelable {
         return authenticationToken;
     }
 
+    @NonNull
+    public String getScreenShotRepositoryName() {
+        return screenShotRepositoryName;
+    }
+
+    @NonNull
+    public String getScreenShotBranchName() {
+        return screenShotBranchName;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -64,36 +84,38 @@ public final class GitHubConfiguration implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(this.ownerName);
         dest.writeString(this.repositoryName);
         dest.writeString(this.authenticationToken);
+        dest.writeString(this.screenShotRepositoryName);
+        dest.writeString(this.screenShotBranchName);
     }
 
     protected GitHubConfiguration(Parcel in) {
-        this.ownerName = in.readString();
         this.repositoryName = in.readString();
         this.authenticationToken = in.readString();
+        this.screenShotRepositoryName = in.readString();
+        this.screenShotBranchName = in.readString();
     }
 
-    public static final Parcelable.Creator<GitHubConfiguration> CREATOR =
-            new Parcelable.Creator<GitHubConfiguration>() {
-                @Override
-                public GitHubConfiguration createFromParcel(Parcel source) {
-                    return new GitHubConfiguration(source);
-                }
+    public static final Creator<GitHubConfiguration> CREATOR = new Creator<GitHubConfiguration>() {
+        @Override
+        public GitHubConfiguration createFromParcel(Parcel source) {
+            return new GitHubConfiguration(source);
+        }
 
-                @Override
-                public GitHubConfiguration[] newArray(int size) {
-                    return new GitHubConfiguration[size];
-                }
-            };
+        @Override
+        public GitHubConfiguration[] newArray(int size) {
+            return new GitHubConfiguration[size];
+        }
+    };
 
     @Override
     public String toString() {
         return "GitHubConfiguration{"
-                + "ownerName='" + ownerName + '\''
                 + ", repositoryName='" + repositoryName + '\''
                 + ", authenticationToken='" + authenticationToken + '\''
+                + ", screenShotRepositoryName='" + screenShotRepositoryName + '\''
+                + ", screenShotBranchName='" + screenShotBranchName + '\''
                 + '}';
     }
 }

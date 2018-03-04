@@ -17,22 +17,18 @@
 package com.github.stkent.bugshaker.github.api;
 
 
-public final class Issue {
+import com.google.gson.annotations.SerializedName;
 
-    private final String title;
-    private final String body;
+public class GitHubFileResponse {
 
+    @SerializedName("download_url")
+    private final String downloadURL;
 
-    public Issue(String title, String body) {
-        this.title = title;
-        this.body = body;
+    public GitHubFileResponse(String downloadURL) {
+        this.downloadURL = downloadURL;
     }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public String getBody() {
-        return body;
+    public String getDownloadURL() {
+        return downloadURL;
     }
 }

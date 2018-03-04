@@ -14,25 +14,26 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package com.github.stkent.bugshaker.github.api;
+package com.github.stkent.bugshaker.utilities;
 
 
-public final class Issue {
+import android.graphics.Bitmap;
+import android.support.annotation.NonNull;
+import android.util.Base64;
 
-    private final String title;
-    private final String body;
+import java.io.ByteArrayOutputStream;
+
+public final class ImageUtils {
 
 
-    public Issue(String title, String body) {
-        this.title = title;
-        this.body = body;
+    @NonNull
+    public static String toBase64(@NonNull final Bitmap bitmap) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+
+        return Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
     }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public String getBody() {
-        return body;
+    private ImageUtils() {
     }
 }

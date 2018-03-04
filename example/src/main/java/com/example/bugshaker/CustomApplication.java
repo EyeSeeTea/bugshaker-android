@@ -32,8 +32,11 @@ public final class CustomApplication extends Application {
                 .setEmailAddresses("someone@example.com")
                 .setLoggingEnabled(BuildConfig.DEBUG)
                 .setAlertDialogType(AlertDialogType.APP_COMPAT)
-                .setGitHubInfo(new GitHubConfiguration("EyeSeeTea", "bugshaker-android",
-                        "token"))
+                .setGitHubInfo(new GitHubConfiguration(
+                        "eyeseetea/bugshaker-android",
+                        "token",
+                        "eyeseeteabottest/snapshots",
+                        "master"))
                 .assemble()
                 .start();
     }

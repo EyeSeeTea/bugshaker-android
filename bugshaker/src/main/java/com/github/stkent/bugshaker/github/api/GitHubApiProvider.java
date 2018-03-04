@@ -31,29 +31,44 @@ public class GitHubApiProvider implements BugReportProvider {
 
     @NonNull
     private final GitHubConfiguration gitHubConfiguration;
+    private final GitHubApi gitHubApi;
 
     public GitHubApiProvider(
             @NonNull final GitHubConfiguration gitHubConfiguration) {
         this.gitHubConfiguration = gitHubConfiguration;
-    }
-
-
-    @Override
-    public Observable<GitHubResponse> addIssue(@NonNull Issue newIssue) {
 
         Retrofit retrofit = new Retrofit.Builder()
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl(GitHubApi.BASE_URL)
                 .build();
+        this.gitHubApi = retrofit.create(GitHubApi.class);
 
-        String owner = gitHubConfiguration.getOwnerName();
-        String repo = gitHubConfiguration.getRepositoryName();
+    }
+
+    @Override
+    public Observable<GitHubResponse> addIssue(@NonNull Issue newIssue) {
+
+        String[] repoArray = gitHubConfiguration.getRepositoryName().split("/");
+        String owner = repoArray[0];
+        String repo = repoArray[1];
         String token = gitHubConfiguration.getAuthenticationToken();
 
-
-        GitHubApi gitHubApi = retrofit.create(GitHubApi.class);
-
         return gitHubApi.addIssue(newIssue, owner, repo, "token " + token);
+    }
+
+    @Override
+    public Observable<GitHubResponse> uploadScreenShot(@NonNull String fileName, @NonNull String base64File) {
+
+        String[] repoArray = gitHubConfiguration.getScreenShotRepositoryName().split("/");
+        String owner = repoArray[0];
+        String repo = repoArray[1];
+
+        String token = gitHubConfiguration.getAuthenticationToken();
+        String branch = gitHubConfiguration.getScreenShotBranchName();
+
+        GitHubCommit commit = new GitHubCommit("Android device snapshot", branch, base64File);
+
+        return gitHubApi.uploadFile(commit, owner, repo, fileName, "token " + token);
     }
 }

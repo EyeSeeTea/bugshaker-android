@@ -16,11 +16,18 @@
  */
 package com.github.stkent.bugshaker.github;
 
+import static com.github.stkent.bugshaker.utilities.FileUtils.getExtensionFrom;
+import static com.github.stkent.bugshaker.utilities.FileUtils.getUniqueFileName;
 import static com.github.stkent.bugshaker.utilities.NetworkUtils.isDeviceConnected;
-import static com.github.stkent.bugshaker.utilities.StringUtils.addMarkdownCodeBlock;
+import static com.github.stkent.bugshaker.utilities.StringUtils.createMarkdownCodeBlock;
+import static com.github.stkent.bugshaker.utilities.StringUtils.createMarkdownFileBlock;
+import static com.github.stkent.bugshaker.utilities.StringUtils.createMarkdownTitle1;
 
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -33,13 +40,17 @@ import com.github.stkent.bugshaker.R;
 import com.github.stkent.bugshaker.github.api.GitHubApiProvider;
 import com.github.stkent.bugshaker.github.api.GitHubResponse;
 import com.github.stkent.bugshaker.github.api.Issue;
+import com.github.stkent.bugshaker.utilities.ImageUtils;
 import com.github.stkent.bugshaker.utilities.Logger;
 import com.github.stkent.bugshaker.utilities.Toaster;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import rx.Observable;
 import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 public class ReportBugActivity extends AppCompatActivity implements View.OnClickListener {
@@ -52,11 +63,13 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
 
     private String deviceInfo;
     private EditText issueTitleEditText;
+    private EditText bugReportEditText;
     private Toaster toaster;
     private ProgressBar progressBar;
     private BugReportProvider bugReportProvider;
     private Button reportBugButton;
     private Logger logger;
+    private Uri screenShotUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +105,7 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
 
         deviceInfo = getIntent().getStringExtra(EXTRA_DEVICE_INFO);
         boolean isLoggerActive = getIntent().getBooleanExtra(EXTRA_IS_LOGGER_ACTIVE, false);
+        screenShotUri = getIntent().getData();
         logger = new Logger(isLoggerActive);
         bugReportProvider = new GitHubApiProvider(gitHubConfiguration);
     }
@@ -100,6 +114,7 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
         progressBar = findViewById(R.id.progressBar);
         toaster = new Toaster(getApplicationContext());
         issueTitleEditText = findViewById(R.id.issue_title);
+        bugReportEditText = findViewById(R.id.bug_text);
 
         reportBugButton = findViewById(R.id.report_bug);
 
@@ -109,35 +124,55 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
 
     private void submitBug() {
 
-        Issue newIssue = getIssueFromUI();
-
         prepareUIComponentsBeforeSubmit();
 
-        bugReportProvider.addIssue(newIssue)
-                //It avoids the activity finishes too quickly
-                // and causes bad user experience
-                .delay(DELAY_BEFORE_SENDING_REPORT, TimeUnit.SECONDS)
-                .subscribeOn(Schedulers.newThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<GitHubResponse>() {
-                    @Override
-                    public void onCompleted() {
-                        prepareUIComponentsAfterSubmit();
-                    }
+        try {
+            String base64Image = getScreenShotOnBase64Format();
+            String fileExtension = getExtensionFrom(screenShotUri);
+            String uniqueFileName = getUniqueFileName(fileExtension, logger);
 
-                    @Override
-                    public void onError(Throwable e) {
-                        prepareUIComponentsAfterSubmit();
-                        toaster.toast(R.string.error_unable_to_send_report);
-                        logger.printStackTrace(e);
-                    }
+            //Uploading Screenshot to GitHub
+            bugReportProvider.uploadScreenShot(uniqueFileName, base64Image)
+                    .flatMap(new Func1<GitHubResponse, Observable<? extends GitHubResponse>>() {
+                        @Override
+                        public Observable<? extends GitHubResponse> call(GitHubResponse
+                                fileResponse) {
+                            String screenShotServerUrl = fileResponse.getContent().getDownloadURL();
+                            Issue newIssue = getIssueFromUI(screenShotServerUrl);
 
-                    @Override
-                    public void onNext(GitHubResponse response) {
-                        toaster.toast(R.string.bug_submitted);
-                        finish();
-                    }
-                });
+                            //Creating GitHub issue
+                            return bugReportProvider.addIssue(newIssue);
+                        }
+                    })
+                    //It avoids the activity finishes too quickly
+                    // and causes bad user experience
+                    .delay(DELAY_BEFORE_SENDING_REPORT, TimeUnit.SECONDS)
+                    .subscribeOn(Schedulers.newThread())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<GitHubResponse>() {
+                        @Override
+                        public void onCompleted() {
+                            prepareUIComponentsAfterSubmit();
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            prepareUIComponentsAfterSubmit();
+                            toaster.toast(R.string.error_unable_to_send_report);
+                            logger.printStackTrace(e);
+                        }
+
+                        @Override
+                        public void onNext(GitHubResponse gitHubResponse) {
+                            toaster.toast(R.string.bug_submitted);
+                            finish();
+                        }
+                    });
+
+        } catch (IOException e) {
+            logger.printStackTrace(e);
+            toaster.toast(R.string.error_unable_to_attach_screenshot_file);
+        }
     }
 
     private boolean areFieldsNotEmpty() {
@@ -145,18 +180,34 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
     }
 
     @NonNull
-    private Issue getIssueFromUI() {
-        EditText bugReportEditText = findViewById(R.id.bug_text);
+    private Issue getIssueFromUI(String screenShotServerUrl) {
 
         String issueTitle = issueTitleEditText.getText().toString();
         String bugReportText = bugReportEditText.getText().toString();
 
-        return new Issue(issueTitle,
-                bugReportText + "\n \n" + addMarkdownCodeBlock(deviceInfo));
+        return new Issue(issueTitle, getBodyIssue(screenShotServerUrl, bugReportText));
+    }
+
+    @NonNull
+    private String getBodyIssue(String screenShotServerUrl, String bugReportText) {
+
+        return createMarkdownTitle1("User Report")
+                + "\n"
+                + bugReportText
+                + "\n"
+                + createMarkdownTitle1("ScreenShot")
+                + "\n"
+                + createMarkdownFileBlock(screenShotServerUrl)
+                + "\n"
+                + createMarkdownTitle1("Device Info")
+                + "\n"
+                + createMarkdownCodeBlock(deviceInfo);
     }
 
     private void prepareUIComponentsBeforeSubmit() {
+        issueTitleEditText.setEnabled(false);
         reportBugButton.setEnabled(false);
+        bugReportEditText.setEnabled(false);
         progressBar.setVisibility(View.VISIBLE);
 
         //Adding elevation progressBar to old versions of Android
@@ -166,8 +217,16 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
     }
 
     private void prepareUIComponentsAfterSubmit() {
+        issueTitleEditText.setEnabled(true);
         reportBugButton.setEnabled(true);
+        bugReportEditText.setEnabled(true);
         progressBar.setVisibility(View.GONE);
+    }
+
+    private String getScreenShotOnBase64Format() throws IOException {
+        Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), screenShotUri);
+
+        return ImageUtils.toBase64(bitmap);
     }
 
 }

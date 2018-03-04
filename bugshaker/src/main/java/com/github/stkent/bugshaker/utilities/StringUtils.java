@@ -16,6 +16,8 @@
  */
 package com.github.stkent.bugshaker.utilities;
 
+import android.support.annotation.NonNull;
+
 import java.util.Locale;
 
 /**
@@ -62,7 +64,8 @@ public final class StringUtils {
 
     }
 
-    public static String addMarkdownCodeBlock(String text) {
+    @NonNull
+    public static String createMarkdownCodeBlock(@NonNull final String text) {
         StringBuilder stringBuilder = new StringBuilder(text);
 
         return stringBuilder
@@ -71,4 +74,18 @@ public final class StringUtils {
                 .toString();
     }
 
+    @NonNull
+    public static String createMarkdownFileBlock(@NonNull final String url) {
+
+        return "![file]"
+                + "("
+                + url
+                + ")";
+    }
+
+    @NonNull
+    public static String createMarkdownTitle1(@NonNull final String text) {
+
+        return "## " + text;
+    }
 }

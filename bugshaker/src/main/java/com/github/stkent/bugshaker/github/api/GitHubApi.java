@@ -22,6 +22,7 @@ import android.support.annotation.NonNull;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import rx.Observable;
 
@@ -32,5 +33,13 @@ public interface GitHubApi {
     @POST("/repos/{owner}/{repo}/issues")
     Observable<GitHubResponse> addIssue(@Body @NonNull Issue issue, @Path("owner") String repoOwner,
             @Path("repo") String repo, @Header("Authorization") String token);
+
+    @SuppressWarnings("PMD.UseObjectForClearerAPI")
+    @PUT("/repos/{owner}/{repo}/contents/{fileName}")
+    Observable<GitHubResponse> uploadFile(@Body @NonNull GitHubCommit commit,
+            @NonNull @Path("owner") String repoOwner,
+            @NonNull @Path("repo") String repo,
+            @NonNull @Path("fileName") String fileName,
+            @NonNull @Header("Authorization") String token);
 
 }

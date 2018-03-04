@@ -18,4 +18,14 @@ package com.github.stkent.bugshaker.github.api;
 
 
 public class GitHubResponse {
+
+    private final GitHubFileResponse content;
+
+    public GitHubResponse(GitHubFileResponse content) {
+        this.content = content;
+    }
+
+    public GitHubFileResponse getContent() {
+        return content;
+    }
 }

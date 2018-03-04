@@ -27,4 +27,5 @@ import rx.Observable;
 public interface BugReportProvider {
 
     Observable<GitHubResponse> addIssue(@NonNull Issue issue);
+    Observable<GitHubResponse> uploadScreenShot(@NonNull String fileName, @NonNull String base64File);
 }

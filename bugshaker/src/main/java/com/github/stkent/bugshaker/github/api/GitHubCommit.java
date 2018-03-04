@@ -17,22 +17,27 @@
 package com.github.stkent.bugshaker.github.api;
 
 
-public final class Issue {
+public class GitHubCommit {
 
-    private final String title;
-    private final String body;
+    private final String message;
+    private final String branch;
+    private final String content;
 
-
-    public Issue(String title, String body) {
-        this.title = title;
-        this.body = body;
+    public GitHubCommit(String message, String branch, String content) {
+        this.message = message;
+        this.branch = branch;
+        this.content = content;
     }
 
-    public String getTitle() {
-        return title;
+    public String getMessage() {
+        return message;
     }
 
-    public String getBody() {
-        return body;
+    public String getBranch() {
+        return branch;
+    }
+
+    public String getContent() {
+        return content;
     }
 }
