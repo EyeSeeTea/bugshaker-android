@@ -140,6 +140,7 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
                             String screenShotServerUrl = fileResponse.getContent().getDownloadURL();
                             Issue newIssue = getIssueFromUI(screenShotServerUrl);
 
+                            logger.d("screenShot uploaded url: " + screenShotServerUrl);
                             //Creating GitHub issue
                             return bugReportProvider.addIssue(newIssue);
                         }
@@ -164,6 +165,7 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
 
                         @Override
                         public void onNext(GitHubResponse gitHubResponse) {
+                            logger.d("GitHub issue Created");
                             toaster.toast(R.string.bug_submitted);
                             finish();
                         }
