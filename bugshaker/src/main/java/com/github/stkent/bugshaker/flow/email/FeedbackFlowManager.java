@@ -26,6 +26,7 @@ import android.support.annotation.Nullable;
 import android.view.WindowManager;
 
 import com.github.stkent.bugshaker.ActivityReferenceManager;
+import com.github.stkent.bugshaker.ApplicationInfoProvider;
 import com.github.stkent.bugshaker.flow.FeedbackProvider;
 import com.github.stkent.bugshaker.flow.dialog.DialogProvider;
 import com.github.stkent.bugshaker.flow.email.screenshot.ScreenshotProvider;
@@ -59,6 +60,9 @@ public final class FeedbackFlowManager {
     @NonNull
     private final Logger logger;
 
+    @NonNull
+    private final ApplicationInfoProvider applicationInfoProvider;
+
     @Nullable
     private Dialog alertDialog;
 
@@ -72,6 +76,7 @@ public final class FeedbackFlowManager {
                 return;
             }
 
+            final String devicesInfo = applicationInfoProvider.getApplicationInfo();
             if (shouldAttemptToCaptureScreenshot(activity)) {
                 screenshotProvider.getScreenshotUri(activity)
                         .single()
@@ -91,12 +96,14 @@ public final class FeedbackFlowManager {
 
                                 logger.printStackTrace(e);
 
-                                feedbackProvider.submitFeedback(activity, null);
+                                feedbackProvider.submitFeedback(activity, null, devicesInfo,
+                                        logger.isLoggingEnabled());
                             }
 
                             @Override
                             public void onNext(final Uri uri) {
-                                feedbackProvider.submitFeedback(activity, uri);
+                                feedbackProvider.submitFeedback(activity, uri, devicesInfo,
+                                        logger.isLoggingEnabled());
                             }
                         });
 
@@ -105,7 +112,8 @@ public final class FeedbackFlowManager {
 
                 toaster.toast(warningString);
                 logger.d(warningString);
-                feedbackProvider.submitFeedback(activity, null);
+                feedbackProvider.submitFeedback(activity, null, devicesInfo,
+                        logger.isLoggingEnabled());
             }
         }
     };
@@ -116,7 +124,8 @@ public final class FeedbackFlowManager {
             @NonNull final FeedbackProvider feedbackProvider,
             @NonNull final ScreenshotProvider screenshotProvider,
             @NonNull final DialogProvider alertDialogProvider,
-            @NonNull final Logger logger) {
+            @NonNull final Logger logger,
+            @NonNull final ApplicationInfoProvider applicationInfoProvider) {
 
         this.toaster = toaster;
         this.activityReferenceManager = activityReferenceManager;
@@ -124,6 +133,7 @@ public final class FeedbackFlowManager {
         this.screenshotProvider = screenshotProvider;
         this.alertDialogProvider = alertDialogProvider;
         this.logger = logger;
+        this.applicationInfoProvider = applicationInfoProvider;
     }
 
     public void onActivityResumed(@NonNull final Activity activity) {

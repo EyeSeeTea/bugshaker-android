@@ -18,5 +18,12 @@
 -->
 <resources>
     <string name="bug_report_detail">Describe the bug</string>
-    <string name="send">Report Bug</string>
+    <string name="send">Send</string>
+    <string name="title">Title</string>
+    <string name="required">Required</string>
+    <string name="bug_submitted">Report submitted</string>
+    <string name="send_feedback">Send Feedback</string>
+
+    <string name="error_unable_to_send_report">Unable to Send Report</string>
+    <string name="error_network_connection_not_available">Network connection not available</string>
 </resources>

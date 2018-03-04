@@ -14,17 +14,8 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package com.github.stkent.bugshaker.flow;
+package com.github.stkent.bugshaker.github.api;
 
 
-import android.app.Activity;
-import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-
-public interface FeedbackProvider {
-
-    void submitFeedback(@NonNull final Activity activity,
-            @Nullable final Uri screenShotUri, @NonNull final String applicationInfo,
-            final boolean loggingEnabled);
+public class GitHubResponse {
 }

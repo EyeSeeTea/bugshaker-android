@@ -47,4 +47,7 @@ public final class Logger {
         }
     }
 
+    public boolean isLoggingEnabled() {
+        return loggingEnabled;
+    }
 }

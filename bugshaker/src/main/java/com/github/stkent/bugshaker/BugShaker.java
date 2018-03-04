@@ -241,7 +241,7 @@ public final class BugShaker implements ShakeDetector.Listener {
                 getFeedbackProvider(),
                 getScreenshotProvider(),
                 getAlertDialogProvider(),
-                logger);
+                logger, getApplicationInfoProvider());
 
         assembled = true;
         return this;
@@ -361,16 +361,20 @@ public final class BugShaker implements ShakeDetector.Listener {
                 genericEmailIntentProvider,
                 logger);
 
-        Environment environment = new Environment();
-        Device device = new Device(application);
-        ApplicationInfoProvider appInfoProvider = new ApplicationInfoProvider(
-                new App(application),
-                environment, device);
-
         feedbackProvider = new FeedbackEmailIntentProvider(application,
                 genericEmailIntentProvider,
-                appInfoProvider, emailAddresses, emailSubjectLine,
+                emailAddresses, emailSubjectLine,
                 emailCapabilitiesProvider, application, logger);
         return feedbackProvider;
+    }
+
+    @NonNull
+    private ApplicationInfoProvider getApplicationInfoProvider() {
+        Environment environment = new Environment();
+        Device device = new Device(application);
+
+        return new ApplicationInfoProvider(
+                new App(application),
+                environment, device);
     }
 }

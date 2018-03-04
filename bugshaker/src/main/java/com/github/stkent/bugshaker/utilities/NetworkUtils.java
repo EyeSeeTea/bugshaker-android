@@ -14,17 +14,25 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package com.github.stkent.bugshaker.flow;
+package com.github.stkent.bugshaker.utilities;
 
 
-import android.app.Activity;
-import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
-public interface FeedbackProvider {
+public final class NetworkUtils {
 
-    void submitFeedback(@NonNull final Activity activity,
-            @Nullable final Uri screenShotUri, @NonNull final String applicationInfo,
-            final boolean loggingEnabled);
+    public static boolean isDeviceConnected(Context context) {
+        ConnectivityManager cm =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+
+        return activeNetwork != null
+                && activeNetwork.isConnectedOrConnecting();
+    }
+
+    private NetworkUtils() {
+    }
 }

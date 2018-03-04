@@ -25,7 +25,6 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import com.github.stkent.bugshaker.ApplicationInfoProvider;
 import com.github.stkent.bugshaker.flow.FeedbackProvider;
 import com.github.stkent.bugshaker.utilities.Logger;
 
@@ -41,9 +40,6 @@ public final class FeedbackEmailIntentProvider implements FeedbackProvider {
 
     @NonNull
     private final App app;
-
-    @NonNull
-    private final ApplicationInfoProvider appInfoProvider;
 
     @NonNull
     private final String[] emailAddresses;
@@ -63,7 +59,6 @@ public final class FeedbackEmailIntentProvider implements FeedbackProvider {
     public FeedbackEmailIntentProvider(
             @NonNull final Context context,
             @NonNull final GenericEmailIntentProvider genericEmailIntentProvider,
-            @NonNull final ApplicationInfoProvider appInfoProvider,
             @NonNull String[] emailAddresses,
             @NonNull final String emailSubjectLine,
             @NonNull final EmailCapabilitiesProvider emailCapabilitiesProvider,
@@ -72,7 +67,6 @@ public final class FeedbackEmailIntentProvider implements FeedbackProvider {
 
         this.genericEmailIntentProvider = genericEmailIntentProvider;
         this.app = new App(context);
-        this.appInfoProvider = appInfoProvider;
         this.emailAddresses = Arrays.copyOf(emailAddresses, emailAddresses.length);
         this.emailSubjectLine = emailSubjectLine;
         this.emailCapabilitiesProvider = emailCapabilitiesProvider;
@@ -83,10 +77,10 @@ public final class FeedbackEmailIntentProvider implements FeedbackProvider {
     @NonNull
     private Intent getFeedbackEmailIntent(
             @NonNull final String[] emailAddresses,
-            @Nullable final String userProvidedEmailSubjectLine) {
+            @Nullable final String userProvidedEmailSubjectLine,
+            @NonNull final String emailBody) {
 
         final String emailSubjectLine = getEmailSubjectLine(userProvidedEmailSubjectLine);
-        final String emailBody = appInfoProvider.getApplicationInfo();
 
         return genericEmailIntentProvider
                 .getEmailIntent(emailAddresses, emailSubjectLine, emailBody);
@@ -96,10 +90,9 @@ public final class FeedbackEmailIntentProvider implements FeedbackProvider {
     private Intent getFeedbackEmailIntent(
             @NonNull final String[] emailAddresses,
             @Nullable final String userProvidedEmailSubjectLine,
-            @NonNull final Uri screenshotUri) {
+            @NonNull final Uri screenshotUri, @NonNull final String emailBody) {
 
         final String emailSubjectLine = getEmailSubjectLine(userProvidedEmailSubjectLine);
-        final String emailBody = appInfoProvider.getApplicationInfo();
 
         return genericEmailIntentProvider
                 .getEmailWithAttachmentIntent(
@@ -118,24 +111,25 @@ public final class FeedbackEmailIntentProvider implements FeedbackProvider {
 
     @Override
     public void submitFeedback(@NonNull Activity activity,
-            @Nullable Uri screenShotUri) {
+            @Nullable Uri screenShotUri, @NonNull String applicationInfo,
+            final boolean loggingEnabled) {
 
         if (emailCapabilitiesProvider.canSendEmailsWithAttachments()) {
-            sendEmailWithScreenshot(activity, screenShotUri);
+            sendEmailWithScreenshot(activity, screenShotUri, applicationInfo);
         } else {
-            sendEmailWithoutScreenshot(activity);
+            sendEmailWithoutScreenshot(activity, applicationInfo);
         }
 
     }
 
     private void sendEmailWithScreenshot(
             @NonNull final Activity activity,
-            @NonNull final Uri screenshotUri) {
+            @NonNull final Uri screenshotUri, @NonNull final String applicationInfo) {
 
         final Intent feedbackEmailIntent = getFeedbackEmailIntent(
                 emailAddresses,
                 emailSubjectLine,
-                screenshotUri);
+                screenshotUri, applicationInfo);
 
         final List<ResolveInfo> resolveInfoList = applicationContext.getPackageManager()
                 .queryIntentActivities(feedbackEmailIntent, PackageManager.MATCH_DEFAULT_ONLY);
@@ -153,10 +147,11 @@ public final class FeedbackEmailIntentProvider implements FeedbackProvider {
         logger.d("Sending email with screenshot.");
     }
 
-    private void sendEmailWithoutScreenshot(@NonNull final Activity activity) {
+    private void sendEmailWithoutScreenshot(@NonNull final Activity activity,
+            @NonNull final String applicationInfo) {
         final Intent feedbackEmailIntent = getFeedbackEmailIntent(
                 emailAddresses,
-                emailSubjectLine);
+                emailSubjectLine, applicationInfo);
 
         activity.startActivity(feedbackEmailIntent);
 

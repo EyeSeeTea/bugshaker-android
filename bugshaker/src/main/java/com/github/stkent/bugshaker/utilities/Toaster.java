@@ -18,6 +18,7 @@ package com.github.stkent.bugshaker.utilities;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.StringRes;
 import android.widget.Toast;
 
 public final class Toaster {
@@ -30,6 +31,14 @@ public final class Toaster {
     }
 
     public void toast(@NonNull final String message) {
+        Toast.makeText(
+                applicationContext,
+                message,
+                Toast.LENGTH_LONG)
+                .show();
+    }
+
+    public void toast(@StringRes final int message) {
         Toast.makeText(
                 applicationContext,
                 message,

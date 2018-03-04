@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.github.stkent.bugshaker">
 
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application>
         <provider
             android:name=".flow.email.screenshot.BugShakerFileProvider"
@@ -13,7 +16,10 @@
                 android:resource="@xml/library_file_paths"/>
         </provider>
 
-        <activity android:name=".github.ReportBugActivity"/>
+        <activity
+            android:name=".github.ReportBugActivity"
+            android:screenOrientation="portrait"
+            android:label="@string/send_feedback"/>
 
     </application>
 

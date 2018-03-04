@@ -62,4 +62,13 @@ public final class StringUtils {
 
     }
 
+    public static String addMarkdownCodeBlock(String text) {
+        StringBuilder stringBuilder = new StringBuilder(text);
+
+        return stringBuilder
+                .insert(0, "```\n")
+                .append("```\n")
+                .toString();
+    }
+
 }
