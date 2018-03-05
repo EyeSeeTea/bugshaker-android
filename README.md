@@ -16,7 +16,7 @@ Shake to send a bug report!
 
 # Introduction
 
-BugShaker allows your QA team and/or end users to easily submit bug reports by shaking their device. When [a shake is detected]((https://github.com/square/seismic)), the current screen state is captured and the user is prompted to submit a bug report via email with this screenshot attached.
+BugShaker allows your QA team and/or end users to easily submit bug reports by shaking their device. When [a shake is detected]((https://github.com/square/seismic)), the current screen state is captured and the user is prompted to submit a bug report via email/GitHub issue with this screenshot attached.
 
 This library is similar to [Telescope](https://github.com/mattprecious/telescope), but aims to be even easier to integrate into your apps and workflows:
 
@@ -49,16 +49,34 @@ https://play.google.com/store/apps/details?id=com.github.stkent.bugshaker
 	    @Override
 	    public void onCreate() {
 	        super.onCreate();
-	
+
 	        BugShaker.get(this)
 	                 .setEmailAddresses("someone@example.com")   // required
 	                 .setEmailSubjectLine("Custom Subject Line") // optional
 	                 .setAlertDialogType(AlertDialogType.NATIVE) // optional
 	                 .setLoggingEnabled(BuildConfig.DEBUG)       // optional
 	                 .setIgnoreFlagSecure(true)                  // optional
+	                 .setGitHubInfo(getGitHubConf())             // optional
 	                 .assemble()                                 // required
 	                 .start();                                   // required
 	    }
+
+
+      //Optional GitHub issues setup.
+	  public GitHubConfiguration getGitHubConf(){
+	        String repositoryName = "eyeseetea/bugshaker-android"; // Owner/Name repository where issues wil be created.
+	        String authenticationToken = "token", // Your GitHub authentication Token.
+            String screenshotRepositoryName = "eyeseeteabottest/snapshots"; // Owner/Name repository where screenshot we will uploaded.
+            String screenshotBranchName = "master"; // The branch where the screenshot we will commited.
+
+	        GitHubConfiguration  gitHubConf =  new GitHubConfiguration(
+	                                 repositoryName,
+                                     authenticationToken,
+                                     screenshotRepositoryName,
+                                     screenshotBranchName
+                                );
+				}
+			return gitHubConf;
 	}
 	```
 
