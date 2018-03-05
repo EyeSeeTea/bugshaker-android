@@ -29,6 +29,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -126,55 +127,32 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
 
         prepareUIComponentsBeforeSubmit();
 
-        try {
-            String base64Image = getScreenShotOnBase64Format();
-            String fileExtension = getExtensionFrom(screenShotUri);
-            String uniqueFileName = getUniqueFileName(fileExtension, logger);
+        createNewIssue()
+                //It avoids the activity finishes too quickly
+                // and causes bad user experience
+                .delay(DELAY_BEFORE_SENDING_REPORT, TimeUnit.SECONDS)
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<GitHubResponse>() {
+                    @Override
+                    public void onCompleted() {
+                        prepareUIComponentsAfterSubmit();
+                    }
 
-            //Uploading Screenshot to GitHub
-            bugReportProvider.uploadScreenShot(uniqueFileName, base64Image)
-                    .flatMap(new Func1<GitHubResponse, Observable<? extends GitHubResponse>>() {
-                        @Override
-                        public Observable<? extends GitHubResponse> call(GitHubResponse
-                                fileResponse) {
-                            String screenShotServerUrl = fileResponse.getContent().getDownloadURL();
-                            Issue newIssue = getIssueFromUI(screenShotServerUrl);
+                    @Override
+                    public void onError(Throwable e) {
+                        prepareUIComponentsAfterSubmit();
+                        toaster.toast(R.string.error_unable_to_send_report);
+                        logger.printStackTrace(e);
+                    }
 
-                            logger.d("screenShot uploaded url: " + screenShotServerUrl);
-                            //Creating GitHub issue
-                            return bugReportProvider.addIssue(newIssue);
-                        }
-                    })
-                    //It avoids the activity finishes too quickly
-                    // and causes bad user experience
-                    .delay(DELAY_BEFORE_SENDING_REPORT, TimeUnit.SECONDS)
-                    .subscribeOn(Schedulers.newThread())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Observer<GitHubResponse>() {
-                        @Override
-                        public void onCompleted() {
-                            prepareUIComponentsAfterSubmit();
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-                            prepareUIComponentsAfterSubmit();
-                            toaster.toast(R.string.error_unable_to_send_report);
-                            logger.printStackTrace(e);
-                        }
-
-                        @Override
-                        public void onNext(GitHubResponse gitHubResponse) {
-                            logger.d("GitHub issue Created");
-                            toaster.toast(R.string.bug_submitted);
-                            finish();
-                        }
-                    });
-
-        } catch (IOException e) {
-            logger.printStackTrace(e);
-            toaster.toast(R.string.error_unable_to_attach_screenshot_file);
-        }
+                    @Override
+                    public void onNext(GitHubResponse gitHubResponse) {
+                        logger.d("GitHub issue Created");
+                        toaster.toast(R.string.bug_submitted);
+                        finish();
+                    }
+                });
     }
 
     private boolean areFieldsNotEmpty() {
@@ -191,16 +169,14 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
     }
 
     @NonNull
-    private String getBodyIssue(String screenShotServerUrl, String bugReportText) {
+    private String getBodyIssue(@Nullable String screenShotServerUrl,
+            @NonNull String bugReportText) {
 
         return createMarkdownTitle1("User Report")
                 + "\n"
                 + bugReportText
                 + "\n"
-                + createMarkdownTitle1("ScreenShot")
-                + "\n"
-                + createMarkdownFileBlock(screenShotServerUrl)
-                + "\n"
+                + getMarkdownScreenshotSection(screenShotServerUrl)
                 + createMarkdownTitle1("Device Info")
                 + "\n"
                 + createMarkdownCodeBlock(deviceInfo);
@@ -231,4 +207,51 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
         return ImageUtils.toBase64(bitmap);
     }
 
+    private Observable<GitHubResponse> createNewIssue() {
+
+        if (screenShotUri != null) {
+            try {
+                String base64Image = getScreenShotOnBase64Format();
+                String fileExtension = getExtensionFrom(screenShotUri);
+                String uniqueFileName = getUniqueFileName(fileExtension, logger);
+
+                //Uploading Screenshot to GitHub
+                return bugReportProvider.uploadScreenShot(uniqueFileName, base64Image)
+                        .flatMap(new Func1<GitHubResponse, Observable<? extends GitHubResponse>>() {
+                            @Override
+                            public Observable<? extends GitHubResponse> call(GitHubResponse
+                                    fileResponse) {
+                                String screenShotServerUrl =
+                                        fileResponse.getContent().getDownloadURL();
+                                Issue newIssue = getIssueFromUI(screenShotServerUrl);
+
+                                logger.d("screenShot uploaded url: " + screenShotServerUrl);
+                                //Creating GitHub issue
+                                return bugReportProvider.addIssue(newIssue);
+                            }
+                        });
+
+            } catch (IOException e) {
+                logger.printStackTrace(e);
+                toaster.toast(R.string.error_unable_to_attach_screenshot_file);
+            }
+        }
+
+        Issue newIssue = getIssueFromUI(null);
+        return bugReportProvider.addIssue(newIssue);
+    }
+
+    @NonNull
+    private String getMarkdownScreenshotSection(@Nullable String screenShotServerUrl) {
+        String string = "";
+
+        if (screenShotServerUrl != null) {
+            string = "\n"
+                    + createMarkdownTitle1("ScreenShot")
+                    + "\n"
+                    + createMarkdownFileBlock(screenShotServerUrl)
+                    + "\n";
+        }
+        return string;
+    }
 }
