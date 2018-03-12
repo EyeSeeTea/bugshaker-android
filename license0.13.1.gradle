@@ -3,6 +3,7 @@ apply plugin: 'com.github.hierynomus.license'
 license {
     header = file("${rootProject.projectDir}/HEADER_LICENSE.txt")
     strictCheck true
+    exclude "**/*.xml"
 
     mapping {
         java='SLASHSTAR_STYLE'
