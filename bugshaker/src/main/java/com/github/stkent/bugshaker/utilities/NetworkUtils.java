@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.stkent.bugshaker.flow.email.screenshot;
+package com.github.stkent.bugshaker.utilities;
 
-import android.support.v4.content.FileProvider;
 
-/**
- * Providing a custom {@code FileProvider} prevents manifest {@code <provider>} name collisions.
- *
- * See https://developer.android.com/guide/topics/manifest/provider-element.html for details.
- */
-public class BugShakerFileProvider extends FileProvider {
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 
-    // This class intentionally left blank.
+public final class NetworkUtils {
 
+    public static boolean isDeviceConnected(Context context) {
+        ConnectivityManager cm =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+
+        return activeNetwork != null
+                && activeNetwork.isConnectedOrConnecting();
+    }
+
+    private NetworkUtils() {
+    }
 }

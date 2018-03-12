@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.stkent.bugshaker.flow.email.screenshot;
+package com.github.stkent.bugshaker.flow;
 
-import android.support.v4.content.FileProvider;
 
-/**
- * Providing a custom {@code FileProvider} prevents manifest {@code <provider>} name collisions.
- *
- * See https://developer.android.com/guide/topics/manifest/provider-element.html for details.
- */
-public class BugShakerFileProvider extends FileProvider {
+import android.app.Activity;
+import android.net.Uri;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
-    // This class intentionally left blank.
+public interface FeedbackProvider {
 
+    void submitFeedback(@NonNull final Activity activity,
+            @Nullable final Uri screenShotUri, @NonNull final String applicationInfo,
+            final boolean loggingEnabled);
 }

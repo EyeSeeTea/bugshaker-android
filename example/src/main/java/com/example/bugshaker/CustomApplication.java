@@ -20,6 +20,7 @@ import android.app.Application;
 
 import com.github.stkent.bugshaker.BugShaker;
 import com.github.stkent.bugshaker.flow.dialog.AlertDialogType;
+import com.github.stkent.bugshaker.github.GitHubConfiguration;
 
 public final class CustomApplication extends Application {
 
@@ -28,11 +29,16 @@ public final class CustomApplication extends Application {
         super.onCreate();
 
         BugShaker.get(this)
-                 .setEmailAddresses("someone@example.com")
-                 .setLoggingEnabled(BuildConfig.DEBUG)
-                 .setAlertDialogType(AlertDialogType.APP_COMPAT)
-                 .assemble()
-                 .start();
+                .setEmailAddresses("someone@example.com")
+                .setLoggingEnabled(BuildConfig.DEBUG)
+                .setAlertDialogType(AlertDialogType.APP_COMPAT)
+                .setGitHubInfo(new GitHubConfiguration(
+                        "eyeseetea/bugshaker-android",
+                        "token",
+                        "eyeseeteabottest/snapshots",
+                        "master"))
+                .assemble()
+                .start();
     }
 
 }

@@ -13,17 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.stkent.bugshaker.flow.email.screenshot;
+package com.github.stkent.bugshaker.utilities;
 
-import android.support.v4.content.FileProvider;
 
-/**
- * Providing a custom {@code FileProvider} prevents manifest {@code <provider>} name collisions.
- *
- * See https://developer.android.com/guide/topics/manifest/provider-element.html for details.
- */
-public class BugShakerFileProvider extends FileProvider {
+import android.support.annotation.NonNull;
 
-    // This class intentionally left blank.
+public final class ObjectUtils {
 
+    @SuppressWarnings("PMD.AvoidThrowingNullPointerException")
+    public static <T> T requireNonNull(T obj, @NonNull String message) {
+        if (obj == null) {
+            throw new NullPointerException(message);
+        }
+
+        return obj;
+    }
+
+    public static boolean isNonNull(Object obj) {
+        return obj != null;
+    }
+
+    private ObjectUtils() {
+    }
 }

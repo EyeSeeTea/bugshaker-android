@@ -1,33 +1,36 @@
 /*
- * Copyright 2016 Stuart Kent
+ * Copyright (c) 2018 EyeSeeTea
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License.
- *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.github.stkent.bugshaker.flow.email;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
+import com.github.stkent.bugshaker.flow.FeedbackProvider;
+import com.github.stkent.bugshaker.utilities.Logger;
 
-public final class FeedbackEmailIntentProvider {
+import java.util.Arrays;
+import java.util.List;
+
+public final class FeedbackEmailIntentProvider implements FeedbackProvider {
 
     private static final String DEFAULT_EMAIL_SUBJECT_LINE_SUFFIX = " Android App Feedback";
 
@@ -38,70 +41,61 @@ public final class FeedbackEmailIntentProvider {
     private final App app;
 
     @NonNull
-    private final Environment environment;
+    private final String[] emailAddresses;
 
     @NonNull
-    private final Device device;
+    private final String emailSubjectLine;
+
+    @NonNull
+    private final EmailCapabilitiesProvider emailCapabilitiesProvider;
+
+    @NonNull
+    private final Context applicationContext;
+
+    @NonNull
+    private final Logger logger;
 
     public FeedbackEmailIntentProvider(
             @NonNull final Context context,
-            @NonNull final GenericEmailIntentProvider genericEmailIntentProvider) {
+            @NonNull final GenericEmailIntentProvider genericEmailIntentProvider,
+            @NonNull String[] emailAddresses,
+            @NonNull final String emailSubjectLine,
+            @NonNull final EmailCapabilitiesProvider emailCapabilitiesProvider,
+            @NonNull final Context applicationContext,
+            @NonNull Logger logger) {
 
         this.genericEmailIntentProvider = genericEmailIntentProvider;
         this.app = new App(context);
-        this.environment = new Environment();
-        this.device = new Device(context);
+        this.emailAddresses = Arrays.copyOf(emailAddresses, emailAddresses.length);
+        this.emailSubjectLine = emailSubjectLine;
+        this.emailCapabilitiesProvider = emailCapabilitiesProvider;
+        this.applicationContext = applicationContext;
+        this.logger = logger;
     }
 
     @NonNull
-    /* default */ Intent getFeedbackEmailIntent(
+    private Intent getFeedbackEmailIntent(
             @NonNull final String[] emailAddresses,
-            @Nullable final String userProvidedEmailSubjectLine) {
+            @Nullable final String userProvidedEmailSubjectLine,
+            @NonNull final String emailBody) {
 
         final String emailSubjectLine = getEmailSubjectLine(userProvidedEmailSubjectLine);
-        final String emailBody = getApplicationInfoString(app, environment, device);
 
         return genericEmailIntentProvider
                 .getEmailIntent(emailAddresses, emailSubjectLine, emailBody);
     }
 
     @NonNull
-    /* default */ Intent getFeedbackEmailIntent(
+    private Intent getFeedbackEmailIntent(
             @NonNull final String[] emailAddresses,
             @Nullable final String userProvidedEmailSubjectLine,
-            @NonNull final Uri screenshotUri) {
+            @NonNull final Uri screenshotUri, @NonNull final String emailBody) {
 
         final String emailSubjectLine = getEmailSubjectLine(userProvidedEmailSubjectLine);
-        final String emailBody = getApplicationInfoString(app, environment, device);
 
         return genericEmailIntentProvider
                 .getEmailWithAttachmentIntent(
                         emailAddresses, emailSubjectLine, emailBody, screenshotUri);
-    }
-
-    @NonNull
-    private String getApplicationInfoString(
-            @NonNull final App app,
-            @NonNull final Environment environment,
-            @NonNull final Device device) {
-
-        final String androidVersionString = String.format(
-                "%s (%s)", environment.getAndroidVersionName(), environment.getAndroidVersionCode());
-
-        final String appVersionString = String.format("%s (%s)", app.getVersionName(), app.getVersionCode());
-
-        // @formatter:off
-        return    "Time Stamp: " + getCurrentUtcTimeStringForDate(new Date()) + "\n"
-                + "App Version: " + appVersionString + "\n"
-                + "Install Source: " + app.getInstallSource() + "\n"
-                + "Android Version: " + androidVersionString + "\n"
-                + "Device Manufacturer: " + device.getManufacturer() + "\n"
-                + "Device Model: " + device.getModel() + "\n"
-                + "Display Resolution: " + device.getResolution() + "\n"
-                + "Display Density (Actual): " + device.getActualDensity() + "\n"
-                + "Display Density (Bucket) " + device.getDensityBucket() + "\n"
-                + "---------------------\n\n";
-        // @formatter:on
     }
 
     @NonNull
@@ -113,14 +107,53 @@ public final class FeedbackEmailIntentProvider {
         return app.getName() + DEFAULT_EMAIL_SUBJECT_LINE_SUFFIX;
     }
 
-    @NonNull
-    private String getCurrentUtcTimeStringForDate(final Date date) {
-        final SimpleDateFormat simpleDateFormat
-                = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss z", Locale.getDefault());
 
-        simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    @Override
+    public void submitFeedback(@NonNull Activity activity,
+            @Nullable Uri screenShotUri, @NonNull String applicationInfo,
+            final boolean loggingEnabled) {
 
-        return simpleDateFormat.format(date);
+        if (emailCapabilitiesProvider.canSendEmailsWithAttachments()) {
+            sendEmailWithScreenshot(activity, screenShotUri, applicationInfo);
+        } else {
+            sendEmailWithoutScreenshot(activity, applicationInfo);
+        }
+
     }
 
+    private void sendEmailWithScreenshot(
+            @NonNull final Activity activity,
+            @NonNull final Uri screenshotUri, @NonNull final String applicationInfo) {
+
+        final Intent feedbackEmailIntent = getFeedbackEmailIntent(
+                emailAddresses,
+                emailSubjectLine,
+                screenshotUri, applicationInfo);
+
+        final List<ResolveInfo> resolveInfoList = applicationContext.getPackageManager()
+                .queryIntentActivities(feedbackEmailIntent, PackageManager.MATCH_DEFAULT_ONLY);
+
+        for (final ResolveInfo receivingApplicationInfo : resolveInfoList) {
+            // FIXME: revoke these permissions at some point!
+            applicationContext.grantUriPermission(
+                    receivingApplicationInfo.activityInfo.packageName,
+                    screenshotUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }
+
+        activity.startActivity(feedbackEmailIntent);
+
+        logger.d("Sending email with screenshot.");
+    }
+
+    private void sendEmailWithoutScreenshot(@NonNull final Activity activity,
+            @NonNull final String applicationInfo) {
+        final Intent feedbackEmailIntent = getFeedbackEmailIntent(
+                emailAddresses,
+                emailSubjectLine, applicationInfo);
+
+        activity.startActivity(feedbackEmailIntent);
+
+        logger.d("Sending email with no screenshot.");
+    }
 }

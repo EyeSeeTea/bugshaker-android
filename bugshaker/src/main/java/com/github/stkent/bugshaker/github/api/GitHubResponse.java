@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.stkent.bugshaker.flow.email.screenshot;
+package com.github.stkent.bugshaker.github.api;
 
-import android.support.v4.content.FileProvider;
 
-/**
- * Providing a custom {@code FileProvider} prevents manifest {@code <provider>} name collisions.
- *
- * See https://developer.android.com/guide/topics/manifest/provider-element.html for details.
- */
-public class BugShakerFileProvider extends FileProvider {
+public class GitHubResponse {
 
-    // This class intentionally left blank.
+    private final GitHubFileResponse content;
 
+    public GitHubResponse(GitHubFileResponse content) {
+        this.content = content;
+    }
+
+    public GitHubFileResponse getContent() {
+        return content;
+    }
 }
