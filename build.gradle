@@ -1,24 +1,17 @@
 buildscript {
     repositories {
-        google()
         jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'com.android.tools.build:gradle:2.2.3'
     }
 }
 
-plugins {
-    id "com.github.hierynomus.license" version "0.13.1" apply false
-}
 
 subprojects {
     repositories {
-        google()
         jcenter()
     }
 
-    apply plugin: "com.github.hierynomus.license"
-    apply from: 'https://raw.githubusercontent.com/EyeSeeTea/bugshaker-android/master/license0.13.1.gradle'
 }
