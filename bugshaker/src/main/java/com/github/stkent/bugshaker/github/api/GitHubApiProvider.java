@@ -15,7 +15,7 @@
  */
 package com.github.stkent.bugshaker.github.api;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.github.stkent.bugshaker.github.BugReportProvider;
 import com.github.stkent.bugshaker.github.GitHubConfiguration;

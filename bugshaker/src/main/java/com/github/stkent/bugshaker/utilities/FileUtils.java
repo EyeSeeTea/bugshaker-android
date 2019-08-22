@@ -17,7 +17,7 @@ package com.github.stkent.bugshaker.utilities;
 
 
 import android.net.Uri;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.io.File;
 import java.io.IOException;

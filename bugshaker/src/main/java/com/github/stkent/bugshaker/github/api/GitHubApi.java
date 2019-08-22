@@ -16,7 +16,7 @@
 package com.github.stkent.bugshaker.github.api;
 
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import retrofit2.http.Body;
 import retrofit2.http.Header;

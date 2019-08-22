@@ -24,8 +24,8 @@ import static com.github.stkent.bugshaker.utilities.NetworkUtils.isDeviceConnect
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.github.stkent.bugshaker.R;
 import com.github.stkent.bugshaker.flow.FeedbackProvider;

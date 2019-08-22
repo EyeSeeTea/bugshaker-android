@@ -20,7 +20,7 @@ import static com.github.stkent.bugshaker.utilities.ObjectUtils.requireNonNull;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 public final class GitHubConfiguration implements Parcelable {
     private static final String PROPERTY_REQUIRED =

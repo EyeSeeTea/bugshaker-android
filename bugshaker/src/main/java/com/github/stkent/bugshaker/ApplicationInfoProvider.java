@@ -16,7 +16,7 @@
 package com.github.stkent.bugshaker;
 
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.github.stkent.bugshaker.flow.email.App;
 import com.github.stkent.bugshaker.flow.email.Device;

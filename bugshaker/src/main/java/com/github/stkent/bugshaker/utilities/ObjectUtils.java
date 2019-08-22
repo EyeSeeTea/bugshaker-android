@@ -16,7 +16,7 @@
 package com.github.stkent.bugshaker.utilities;
 
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 public final class ObjectUtils {
 

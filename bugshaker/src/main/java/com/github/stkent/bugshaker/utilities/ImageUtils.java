@@ -17,7 +17,7 @@ package com.github.stkent.bugshaker.utilities;
 
 
 import android.graphics.Bitmap;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Base64;
 
 import java.io.ByteArrayOutputStream;
