@@ -111,12 +111,12 @@ public class ReportBugActivity extends AppCompatActivity implements View.OnClick
     }
 
     private void bindUI() {
-        progressBar = findViewById(R.id.progressBar);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
         toaster = new Toaster(getApplicationContext());
-        issueTitleEditText = findViewById(R.id.issue_title);
-        bugReportEditText = findViewById(R.id.bug_text);
+        issueTitleEditText = (EditText)findViewById(R.id.issue_title);
+        bugReportEditText = (EditText)findViewById(R.id.bug_text);
 
-        reportBugButton = findViewById(R.id.report_bug);
+        reportBugButton = (Button) findViewById(R.id.report_bug);
 
         reportBugButton.setOnClickListener(this);
 
