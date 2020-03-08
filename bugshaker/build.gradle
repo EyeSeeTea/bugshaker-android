@@ -44,6 +44,9 @@ android {
     }
 
     buildTypes {
+        dexOptions {
+            matchingFallbacks = ['release', 'debug', 'staging']
+        }
         debug {
             // Required so that dependencies are properly protected when building debug example build type.
           //  proguardFiles 'proguard/rxjava.pro', 'proguard/bugshaker.pro', 'proguard/v7support.pro', 'proguard/retrofit.pro'
@@ -52,6 +55,11 @@ android {
         release {
 //            proguardFiles 'proguard/rxjava.pro', 'proguard/bugshaker.pro', 'proguard/v7support.pro',
 //                    'proguard/retrofit.pro'
+        }
+
+        staging {
+
+
         }
     }
 
